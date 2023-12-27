@@ -1,6 +1,5 @@
 import java.util.ArrayList;
 import java.util.Random;
-import java.util.Scanner;
 
 public abstract class Game {
     // ~~~~~~~~ Attributes ~~~~~~~~
@@ -27,26 +26,25 @@ public abstract class Game {
             System.out.println("There isn't enough players in the game!");
    */
 
-    private void addPlayer() {
+    private void addPlayer(String playerName) {//there might be some changes here that not output provided
         if (!players.isFull()) {
-            System.out.println("Enter your name: ");
-            Scanner scanner = new Scanner(System.in);
-            players.enqueue(new Player(scanner.next()));
+            players.enqueue(new Player(playerName));
         }
         else
             System.out.println("Sorry, the game party is full!");
     }
 
     private boolean validNumberOfPlayers(){
-        if(players.isEmpty() || players.isFull() || players.size() < 2)
+        if(players.isFull() || players.size() < 2)
             return false;
         return true;
     }
 
     public void distributeCards() {
         for (int n = 0; n < this.initialNumberOfCards; n++) {
-            for (Player p : players) {
+            for (int i = 0; i < players.size(); ++i) {
                 // get the card to the player
+                Player p = players.serve();
                 p.addCard(gameCards.get(0));
                 gameCards.remove(0);
             }
@@ -54,7 +52,9 @@ public abstract class Game {
     }
 
     public boolean isThereWinner(){
-        for (Player p : players) {
+        for (int i = 0; i < players.size(); ++i) {
+            // get the card to the player
+            Player p = players.serve();
             if(p.getStatus() == Player.STATUS[2])
                 return true;
         }
@@ -94,19 +94,15 @@ public abstract class Game {
             for(int j = i; j < 10; ++j){
                 gameCards.add(new NumberCard(j, cardColor, ++cardCode));
             }
+            // set the skip cards
+            gameCards.add(new SkipCard(cardColor, ++cardCode));
+
+            // set the reverse cards
+            gameCards.add(new ReverseCard(cardColor, ++cardCode));
+
+            // set the draw2 cards
+            gameCards.add(new Draw2Card(cardColor, ++cardCode));
         }
-
-        // set the skip cards
-        gameCards.add(new SkipCard(cardColor, ++cardCode));
-        gameCards.add(new SkipCard(cardColor, ++cardCode));
-
-        // set the reverse cards
-        gameCards.add(new ReverseCard(cardColor, ++cardCode));
-        gameCards.add(new ReverseCard(cardColor, ++cardCode));
-
-        // set the draw2 cards
-        gameCards.add(new Draw2Card(cardColor, ++cardCode));
-        gameCards.add(new Draw2Card(cardColor, ++cardCode));
     }
 
     private static void suffleCards() {
