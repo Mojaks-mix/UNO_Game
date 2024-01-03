@@ -1,5 +1,3 @@
-import java.util.Iterator;
-
 public class CircularQueue<T>{
     private int maxSize;
     private int front;
@@ -52,14 +50,6 @@ public class CircularQueue<T>{
                 i = (i + 1) % maxSize;
             }
             System.out.println();
-        }
-    }
-
-    public void reverse(){
-        if (rear != front) {
-            int temp = front;
-            front = rear;
-            rear = temp;
         }
     }
 

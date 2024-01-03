@@ -8,7 +8,7 @@ public class Player {
 
     protected String playerName;
 
-    protected ArrayList<Card> playerCards;
+    protected ArrayList<Card> playerCards = new ArrayList<>();
 
     protected String playerStatus;//the status: Playing, UNO!, and Winner
 
@@ -36,17 +36,15 @@ public class Player {
 
     public Card removeCard(int cardCodeToRemove) {
         Card cardToRemove = null;
-        for (Card card: playerCards)
-        {
-            if (card.getCardCode() == cardCodeToRemove)
-            {
+        for (Card card: playerCards) {
+            if (card.getCardCode() == cardCodeToRemove) {
                 cardToRemove = card;
                 this.updateStatus();
                 break;
             }
         }
-
         playerCards.remove(cardToRemove);
+        updateStatus();
 
         return cardToRemove;
     }
@@ -58,5 +56,15 @@ public class Player {
         }
 
         return false;
+    }
+
+    public ArrayList<Card> getPlayerCards() {return playerCards;}
+
+    public int getScore(){
+        int score = 0;
+        for(int i = 0; i < playerCards.size(); ++i){
+            score += playerCards.get(i).getCardScore();
+        }
+        return score;
     }
 }
