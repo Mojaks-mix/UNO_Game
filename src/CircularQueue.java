@@ -1,6 +1,4 @@
-import java.util.Iterator;
-
-public class CircularQueue<T> implements Iterable<T>{
+public class CircularQueue<T>{
     private int maxSize;
     private int front;
     private int rear;
@@ -55,39 +53,14 @@ public class CircularQueue<T> implements Iterable<T>{
         }
     }
 
-    public void reverse(){
-        if (rear != front) {
-            int temp = front;
-            front = rear;
-            rear = temp;
-        }
-    }
-
     public int size(){return (maxSize + (rear - front)) % maxSize;}
 
-    public Iterator<T> iterator() {
-        return new CircularQueueIterator();
-    }
-
-    private class CircularQueueIterator implements Iterator<T> {
-        private int currentIndex = front;
-        private int elementsRemaining = size();
-
-        @Override
-        public boolean hasNext() {
-            return elementsRemaining > 0;
+    public T serve(){
+        if(!isEmpty()){
+            T servedItem = dequeue();
+            enqueue(servedItem);
+            return servedItem;
         }
-
-        @Override
-        public T next() {
-            if (!hasNext()) {
-                throw new UnsupportedOperationException("No more elements in the queue.");
-            }
-
-            T item = (T) queue[currentIndex];
-            currentIndex = (currentIndex + 1) % maxSize;
-            elementsRemaining--;
-            return item;
-        }
+        return null;
     }
 }
