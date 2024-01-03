@@ -31,6 +31,8 @@ public abstract class Game {
 
         // check the wild draw cards
         if (playerChoosenCard instanceof WildDrawCard) {
+            if(player.getPlayerCards().size() == 1)//special case
+                return true;
             for (Card card: player.getPlayerCards())
             {
                 if (card instanceof WildDrawCard)
