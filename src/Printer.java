@@ -37,7 +37,7 @@ import java.util.Scanner;
 
                     System.out.print("\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
                     System.out.print(INDENT + "\b\b\b" +
-                            "Please enter the number of the players (1 < n < 10):  ");
+                            "Please enter the number of the players (1 < n < 11):  ");
                 }
 
                 public static void getPlayerName(int playerNum) {
@@ -134,10 +134,10 @@ import java.util.Scanner;
                     finishEnter(finish);
                 }
 
-                public static void noChoiceError(Scanner finish) {
+                public static void noChoiceError(Scanner finish, Player player) {
                     System.out.println("\t\t\t" +
                                         Color.YELLOW + Color.RED +
-                                        "<@ ! YOU CAN'T CHOOSE ANY CARD. ONE CARD HAVE GIVEN TO YOU ! @>" +
+                                        "<@ ! "+ player.getName() +" YOU CAN'T CHOOSE ANY CARD. ONE CARD HAVE GIVEN TO YOU ! @>" +
                                         Color.RESET);
 
                     finishEnter(finish);

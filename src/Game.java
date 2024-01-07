@@ -5,7 +5,7 @@ import java.util.Scanner;
 public abstract class Game {
     // ~~~~~~~~ Attributes ~~~~~~~~
     protected static Scanner inputs = new Scanner(System.in);
-    protected CircularQueue<Player> players = new CircularQueue<>(9);
+    protected CircularQueue<Player> players = new CircularQueue<>(10);
     protected  ArrayList<Card> gameCards = new ArrayList<>();
     protected  ArrayList<Card> drawnCards = new ArrayList<>();
     protected  ArrayList<Card> discardPile = new ArrayList<>();
@@ -16,6 +16,8 @@ public abstract class Game {
 
 
     // ~~~~~~~~ Methods ~~~~~~~~
+
+
     //~~~~~~~~~~~~~~~~~~   Your Methods ~~~~~~~~~~~~~~~~
     protected abstract void play();//Look for it in the documentation
     protected boolean isCustomValid(){
@@ -24,6 +26,9 @@ public abstract class Game {
     protected void makeCustomCards(){}//make sure to increment the cardCode
     protected void applyCustom(){}//The action that will be done
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+    //~~~~~~~~~~Check the Valid position of a card~~~~~~~
     private  boolean checkChoose(Card playerChoosenCard, Player player){
         // check the wild cards
         if (playerChoosenCard instanceof WildCard)
@@ -31,25 +36,12 @@ public abstract class Game {
 
         // check the wild draw cards
         if (playerChoosenCard instanceof WildDrawCard) {
-            for (Card card: player.getPlayerCards())
-            {
-                if (card instanceof WildDrawCard)
-                    continue;
-
-                if (checkChoose(card, player))//if there is other valid card the player can't play wild draw 4
-                    return false;
-            }
-
-
-            return true;
+            return checkWildCard(playerChoosenCard, player);
         }
 
         // check draw2 cards if it is not the first draw two "draw 2 stacked!!!"
         if (groundCard instanceof Draw2Card && drawnCards.size() != 0) {
-            if (playerChoosenCard instanceof Draw2Card)
-                return true;
-            else
-                return false;
+            checkDraw2Card(playerChoosenCard, player);
         }
 
         // revers card case "stacked!!!"
@@ -75,29 +67,53 @@ public abstract class Game {
         return false;
     }
 
-    private  void applyChoose(Card playerChoosenCard, Color choosenColor){
+    protected boolean checkWildCard(Card playerChoosenCard, Player player){
+        if(player.getPlayerCards().size() == 1)//special case
+            return true;
+        for (Card card: player.getPlayerCards())
+        {
+            if (card instanceof WildDrawCard)
+                continue;
+
+            if (checkChoose(card, player))//if there is other valid card the player can't play wild draw 4
+                return false;
+        }
+
+
+        return true;
+    }
+
+    protected boolean checkDraw2Card(Card playerChoosenCard, Player player){
+            if (playerChoosenCard instanceof Draw2Card)
+                return true;
+            else
+                return false;
+    }
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+    //~~~~~~~~~~~~Applying the action of the Card~~~~~~~~
+    private  void applyChoose(Card playerChoosenCard, Color choosenColor, Player player){
         changeGroundCard(playerChoosenCard);
         groundColor = choosenColor;
 
-        if (playerChoosenCard instanceof WildDrawCard) {
-            for (int n = 0; n < 4; n++) {
-                drawnCards.add(gameCards.get(0));
-                gameCards.remove(0);
-            }
+        if (playerChoosenCard instanceof WildCard){
+            chooseGroundColor(playerChoosenCard,player);
+        }
+
+        else if (playerChoosenCard instanceof WildDrawCard) {
+            chooseGroundColor(playerChoosenCard,player);
+            addToBeDrawn(4);
         }
 
         else if (playerChoosenCard instanceof Draw2Card) {
-            for (int n = 0; n < 2; n++) {
-                drawnCards.add(gameCards.get(0));
-                gameCards.remove(0);
-            }
+            addToBeDrawn(2);
         }
 
         else if (playerChoosenCard instanceof SkipCard)
-            players.serve();
+            skipTurn();
 
         else if (playerChoosenCard instanceof ReverseCard) {
-            players.serve();
             reverse();
         }
 
@@ -106,16 +122,162 @@ public abstract class Game {
         }
     }
 
+    protected void applyDraw2OnCurrentPlayer(Player currentPlayer){
+        boolean check = false;
+        for (Card card: currentPlayer.getPlayerCards()) {
+            if (card instanceof Draw2Card) {
+                check = true;
+                break;
+            }
+        }
+
+        if (!check) {
+            int n = drawnCards.size();
+            drawCards(currentPlayer,n);
+        }
+    }
+
+    protected void applyWildDrawOnCurrentPlayer(Player currentPlayer){
+        players.serve();
+        currentPlayer = players.peek();
+        int n = drawnCards.size();
+        drawCards(currentPlayer, n);
+    }
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+    //~~~~~~~~~~~~~Common Actions in UNO~~~~~~~~~~~~~~~~~
+    protected void reverse(){
+        if (!players.isEmpty()) {
+            if (players.size() > 1) {
+                players.serve();
+                int size = players.size();
+                Player[] tempArray = new Player[size];
+
+                int index = 0;
+                while (!players.isEmpty()) {
+                    tempArray[index++] = players.dequeue();
+                }
+
+                for (int i = size - 1; i >= 0; i--) {
+                    players.enqueue(tempArray[i]);
+                }
+            }
+        }
+    }
+
+    protected void drawCards(Player p, int n){
+        for(int i = 0; i < n; ++i) {
+            p.addCard(drawnCards.get(0));
+            drawnCards.remove(0);
+        }
+    }
+
+    protected void skipTurn(){
+        players.serve();
+    }
+
+    protected void addToBeDrawn(int number){
+        for (int n = 0; n < number; n++) {
+            drawnCards.add(gameCards.get(0));
+            gameCards.remove(0);
+        }
+    }
+
+    protected  void shuffleCards(ArrayList<Card> sCards) {
+        ArrayList<Integer> shuffledCards = new ArrayList<>();
+        Card holdCard;
+        Random rand = new Random();
+        int randNum1 = 0, randNum2 = 0;
+
+        // shuffle 80 cards (40 * 2 cards)
+        for (int n = 0; n < 40; n++) {
+            while (true) {
+                randNum1 = rand.nextInt(sCards.size());
+                if (!shuffledCards.contains(randNum1))
+                    break;
+            }
+            shuffledCards.add(randNum1);
+
+            while (true) {
+                randNum2 = rand.nextInt(sCards.size());
+                if (!shuffledCards.contains(randNum2) && randNum2 != randNum1)
+                    break;
+            }
+            shuffledCards.add(randNum2);
+
+            holdCard = sCards.get(randNum1);
+            sCards.set(randNum1, sCards.get(randNum2));
+            sCards.set(randNum2, holdCard);
+        }
+    }
+
+    protected void distributeCards(ArrayList<Card> dist) {
+        for (int n = 0; n < this.initialNumberOfCards; n++) {
+            for (int i = 0; i < players.size(); ++i) {
+                // get the card to the player
+                Player p = players.serve();
+                p.addCard(dist.get(0));
+                dist.remove(0);
+            }
+        }
+    }
+
+    protected void chooseGroundColor(Card playerChoosenCard, Player currentPlayer){
+       String holdInput;
+
+       // while player choose a correct input
+       while (true) {
+           // ask the player chosen color
+           Printer.getPlayerChoosenColor();
+           holdInput = inputs.nextLine();
+
+           // check the player input
+           if (holdInput.length() == 1 && holdInput.charAt(0) > '0' && holdInput.charAt(0) < '5')
+               break;
+
+
+           // say that player input is incorrect
+           Printer.inValidInputError(inputs);
+
+           // show the board,and current player cards
+           Printer.printGameBoard(groundCard, groundColor);
+           Printer.printPlayerCards(currentPlayer);
+       }
+
+       switch (holdInput) {
+           case "1":
+               groundColor = Color.RED;
+               break;
+
+           case "2":
+               groundColor = Color.YELLOW;
+               break;
+
+           case "3":
+               groundColor = Color.GREEN;
+               break;
+
+           case "4":
+               groundColor = Color.BLUE;
+               break;
+       }
+
+   }
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+    //~~~~~~~~~~~~~The main logic of the game~~~~~~~~~~~~
     protected  void runGameTurns() {
         //  * Required variables *
-
         Player currentPlayer;
         Card playerChoosenCard;
         String holdInput; // hold the player inputs
 
-        setGroundCard();
+        setGroundCard();//first card on the ground
 
         while (!isThereWinner()) {
+            //for the game to keep going
             if(gameCards.isEmpty()) {
                 shuffleCards(discardPile);
                 gameCards = discardPile;
@@ -126,19 +288,7 @@ public abstract class Game {
 
             //the draw 2 cards case
             if (drawnCards.size() != 0) {
-                boolean check = false;
-                for (Card card: currentPlayer.getPlayerCards()) {
-                    if (card instanceof Draw2Card) {
-                        check = true;
-                        break;
-                    }
-                }
-
-                if (!check) {
-                    int n = drawnCards.size();
-                    drawCards(currentPlayer,n);
-                }
-
+                applyDraw2OnCurrentPlayer(currentPlayer);
                 // go to the next player
                 players.serve();
                 continue;
@@ -155,7 +305,7 @@ public abstract class Game {
                     //show the board,and current player cards
                     Printer.printGameBoard(groundCard, groundColor);
                     Printer.printPlayerCards(currentPlayer);
-                    Printer.noChoiceError(inputs);
+                    Printer.noChoiceError(inputs, currentPlayer);
 
                     // go to the next player
                     players.serve();
@@ -176,10 +326,9 @@ public abstract class Game {
                     Printer.getPlayerChoice(currentPlayer);
                     holdInput = inputs.nextLine();
 
-
                     // check player choice
                     if (holdInput.length() > 0 && holdInput.length() < 4 && isInt(holdInput))
-                        if (Integer.valueOf(holdInput) <= 108  &&  Integer.valueOf(holdInput) > 0)
+                        if (Integer.valueOf(holdInput) <= cardCode  &&  Integer.valueOf(holdInput) > 0)
                             if (currentPlayer.haveCard(Integer.valueOf(holdInput)))
                                 break;
 
@@ -188,59 +337,14 @@ public abstract class Game {
                     Printer.inValidInputError(inputs);
                 }
 
-
                 // get player chosen card
                 playerChoosenCard = currentPlayer.removeCard(Integer.valueOf(holdInput));
 
                 // check the player chosen card
                 if (checkChoose(playerChoosenCard, currentPlayer)) {
-                    if (playerChoosenCard instanceof WildCard || playerChoosenCard instanceof WildDrawCard) {
-                        // while player choose a correct input
-                        while (true) {
-                            // ask the player chosen color
-                            Printer.getPlayerChoosenColor();
-                            holdInput = inputs.nextLine();
-
-                            // check the player input
-                            if (holdInput.length() == 1 && holdInput.charAt(0) > '0' && holdInput.charAt(0) < '5')
-                                break;
-
-
-                            // say that player input is incorrect
-                            Printer.inValidInputError(inputs);
-
-                            // show the board,and current player cards
-                            Printer.printGameBoard(groundCard, groundColor);
-                            Printer.printPlayerCards(currentPlayer);
-                        }
-
-                        switch (holdInput) {
-                            case "1":
-                                applyChoose(playerChoosenCard, Color.RED);
-                                break;
-
-                            case "2":
-                                applyChoose(playerChoosenCard, Color.YELLOW);
-                                break;
-
-                            case "3":
-                                applyChoose(playerChoosenCard, Color.GREEN);
-                                break;
-
-                            case "4":
-                                applyChoose(playerChoosenCard, Color.BLUE);
-                                break;
-                        }
-
-                    }
-
-                    else
-                        applyChoose(playerChoosenCard, playerChoosenCard.getCardColor());
-
-
+                    applyChoose(playerChoosenCard, playerChoosenCard.getCardColor(), currentPlayer);
                     break;
                 }
-
 
                 // give back the card to the player
                 currentPlayer.addCard(playerChoosenCard);
@@ -251,10 +355,7 @@ public abstract class Game {
 
             // wild draw case
             if (playerChoosenCard instanceof WildDrawCard){
-                players.serve();
-                currentPlayer = players.peek();
-                int n = drawnCards.size();
-                drawCards(currentPlayer, n);
+                applyWildDrawOnCurrentPlayer(currentPlayer);
                 continue;
             }
 
@@ -276,31 +377,6 @@ public abstract class Game {
         return false;
     }
 
-    private void reverse(){
-        if (!players.isEmpty()) {
-            if (players.size() > 1) {
-                int size = players.size();
-                Player[] tempArray = new Player[size];
-
-                int index = 0;
-                while (!players.isEmpty()) {
-                    tempArray[index++] = players.dequeue();
-                }
-
-                for (int i = size - 1; i >= 0; i--) {
-                    players.enqueue(tempArray[i]);
-                }
-            }
-        }
-    }
-
-    private void drawCards(Player p, int n){
-        for(int i = 0; i < n; ++i) {
-            p.addCard(drawnCards.get(0));
-            drawnCards.remove(0);
-        }
-    }
-
     private void setGroundCard(){
         groundCard = gameCards.get(0);
         groundColor = groundCard.getCardColor();
@@ -319,17 +395,6 @@ public abstract class Game {
         }
     }
 
-    protected void distributeCards() {
-        for (int n = 0; n < this.initialNumberOfCards; n++) {
-            for (int i = 0; i < players.size(); ++i) {
-                // get the card to the player
-                Player p = players.serve();
-                p.addCard(gameCards.get(0));
-                gameCards.remove(0);
-            }
-        }
-    }
-
     private boolean isThereWinner(){
         for (int i = 0; i < players.size(); ++i) {
             Player p = players.serve();
@@ -337,16 +402,6 @@ public abstract class Game {
                 return true;
         }
         return false;
-    }
-
-    protected Player getWinner(){
-        for (int i = 0; i < players.size(); ++i) {
-            // get the card to the player
-            Player p = players.serve();
-            if(p.getStatus() == Player.STATUS[2])
-                return p;
-        }
-        return null;
     }
 
     protected  void preparationGameCards() {
@@ -382,34 +437,6 @@ public abstract class Game {
             gameCards.add(new SkipCard(cardColor, ++cardCode));// set the skip cards
             gameCards.add(new ReverseCard(cardColor, ++cardCode));// set the reverse cards
             gameCards.add(new Draw2Card(cardColor, ++cardCode));// set the draw2 cards
-        }
-    }
-
-    private  void shuffleCards(ArrayList<Card> sCards) {
-        ArrayList<Integer> shuffledCards = new ArrayList<>();
-        Card holdCard;
-        Random rand = new Random();
-        int randNum1 = 0, randNum2 = 0;
-
-        // shuffle 80 cards (40 * 2 cards)
-        for (int n = 0; n < 40; n++) {
-            while (true) {
-                randNum1 = rand.nextInt(sCards.size());
-                if (!shuffledCards.contains(randNum1))
-                    break;
-            }
-            shuffledCards.add(randNum1);
-
-            while (true) {
-                randNum2 = rand.nextInt(sCards.size());
-                if (!shuffledCards.contains(randNum2) && randNum2 != randNum1)
-                    break;
-            }
-            shuffledCards.add(randNum2);
-
-            holdCard = sCards.get(randNum1);
-            sCards.set(randNum1, sCards.get(randNum2));
-            sCards.set(randNum2, holdCard);
         }
     }
 
