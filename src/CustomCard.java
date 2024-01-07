@@ -1,5 +1,5 @@
 public class CustomCard extends Card{
-    public CustomCard(Color cardColor, int cardCode, int cardScore) {
+    public CustomCard(Color cardColor, int cardCode, int cardScore = 0) {
         super(cardColor, cardCode, cardScore);
     }
 
